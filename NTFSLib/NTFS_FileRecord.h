@@ -126,7 +126,9 @@ public:
 	int GetParentRef() const;
 	int GetFileName(_TCHAR *buf, DWORD bufLen) const;
 	__inline ULONGLONG GetFileSize() const;
-	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const;
+	//void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const;
+	void GetFileTime(FILETIME *SI_writeTm, FILETIME *SI_createTm = NULL, FILETIME *SI_accessTm = NULL, FILETIME *SI_mftTm = NULL,
+			FILETIME *FN_writeTm = NULL, FILETIME *FN_createTm = NULL, FILETIME *FN_accessTm = NULL, FILETIME *FN_mftTm = NULL) const;
 
 	void TraverseSubEntries(SUBENTRY_CALLBACK seCallBack) const;
 	__inline const BOOL FindSubEntry(const _TCHAR *fileName, CIndexEntry &ieFound) const;
@@ -608,25 +610,59 @@ __inline ULONGLONG CFileRecord::GetFileSize() const
 }
 
 // Get File Times
-void CFileRecord::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm) const
+//void CFileRecord::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm) const
+void CFileRecord::GetFileTime(FILETIME *SI_writeTm, FILETIME *SI_createTm, FILETIME *SI_accessTm, FILETIME *SI_mftTm,
+		FILETIME *FN_writeTm, FILETIME *FN_createTm, FILETIME *FN_accessTm, FILETIME *FN_mftTm) const
 {
 	// Standard Information attribute hold the most updated file time
 	CAttr_StdInfo *si = (CAttr_StdInfo*)AttrList[ATTR_INDEX(ATTR_TYPE_STANDARD_INFORMATION)].FindFirstEntry();
+
 	if (si)
-		si->GetFileTime(writeTm, createTm, accessTm);
+		si->GetFileTime(SI_writeTm, SI_createTm, SI_accessTm, SI_mftTm);
 	else
 	{
-		writeTm->dwHighDateTime = 0;
-		writeTm->dwLowDateTime = 0;
-		if (createTm)
+		SI_writeTm->dwHighDateTime = 0;
+		SI_writeTm->dwLowDateTime = 0;
+		if (SI_createTm)
 		{
-			createTm->dwHighDateTime = 0;
-			createTm->dwLowDateTime = 0;
+			SI_createTm->dwHighDateTime = 0;
+			SI_createTm->dwLowDateTime = 0;
 		}
-		if (accessTm)
+		if (SI_accessTm)
 		{
-			accessTm->dwHighDateTime = 0;
-			accessTm->dwLowDateTime = 0;
+			SI_accessTm->dwHighDateTime = 0;
+			SI_accessTm->dwLowDateTime = 0;
+		}
+		if (SI_mftTm)
+		{
+			SI_mftTm->dwHighDateTime = 0;
+			SI_mftTm->dwLowDateTime = 0;
+		}
+	}
+	// get FILE NAME attribute TimeStamp 
+
+	CFileName *fn = (CFileName*)AttrList[ATTR_INDEX(ATTR_TYPE_FILE_NAME)].FindFirstEntry();
+
+	if (fn)
+		fn->GetFileTime(FN_writeTm, FN_createTm, FN_accessTm, FN_mftTm);
+	else
+	{
+		FN_writeTm->dwHighDateTime = 0;
+		FN_writeTm->dwLowDateTime = 0;
+		if (FN_createTm)
+		{
+			FN_createTm->dwHighDateTime = 0;
+			FN_createTm->dwLowDateTime = 0;
+		}
+		if (FN_accessTm)
+		{
+			FN_accessTm->dwHighDateTime = 0;
+			FN_accessTm->dwLowDateTime = 0;
+		}
+		if (FN_mftTm)
+		{
+			FN_mftTm->dwHighDateTime = 0;
+			FN_mftTm->dwLowDateTime = 0;
 		}
 	}
 }

@@ -602,8 +602,9 @@ private:
 	const ATTR_STANDARD_INFORMATION *StdInfo;
 
 public:
-	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const;
-	__inline DWORD GetFilePermission() const;
+	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL, FILETIME *mftTm = NULL) const;
+
+	__inline DWORD GetFilePermission(){}	__inline DWORD GetFilePermission() const;
 	__inline BOOL IsReadOnly() const;
 	__inline BOOL IsHidden() const;
 	__inline BOOL IsSystem() const;
@@ -627,7 +628,7 @@ CAttr_StdInfo::~CAttr_StdInfo()
 }
 
 // Change from UTC time to local time
-void CAttr_StdInfo::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm) const
+void CAttr_StdInfo::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm, FILETIME *mftTm) const
 {
 	UTC2Local(StdInfo->AlterTime, writeTm);
 
@@ -636,6 +637,9 @@ void CAttr_StdInfo::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME 
 
 	if (accessTm)
 		UTC2Local(StdInfo->ReadTime, accessTm);
+
+	if(mftTm)
+		UTC2Local(StdInfo->MFTTime, mftTm);
 }
 
 __inline DWORD CAttr_StdInfo::GetFilePermission() const
@@ -729,8 +733,8 @@ public:
 	int GetFileName(wchar_t *buf, DWORD bufLen) const;
 	__inline BOOL HasName() const;
 	__inline BOOL IsWin32Name() const;
+	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL, FILETIME *mftTm = NULL) const;
 
-	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const;
 };	// CFileName
 
 CFileName::CFileName(ATTR_FILE_NAME *fn)
@@ -970,7 +974,7 @@ __inline BOOL CFileName::IsWin32Name() const
 }
 
 // Change from UTC time to local time
-void CFileName::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm) const
+void CFileName::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *accessTm, FILETIME *mftTm) const
 {
 	CAttr_StdInfo::UTC2Local(FileName ? FileName->AlterTime : 0, writeTm);
 
@@ -979,6 +983,9 @@ void CFileName::GetFileTime(FILETIME *writeTm, FILETIME *createTm, FILETIME *acc
 
 	if (accessTm)
 		CAttr_StdInfo::UTC2Local(FileName ? FileName->ReadTime : 0, accessTm);
+
+	if (mftTm)
+		CAttr_StdInfo::UTC2Local(FileName ? FileName->ReadTime : 0, mftTm);
 }
 
 
@@ -999,13 +1006,17 @@ public:
 	{
 		NTFS_TRACE("CAttr_FileName deleted\n");
 	}
+	
+	void GetFileTime(FILETIME *SI_writeTm, FILETIME *SI_createTm = NULL, FILETIME *SI_accessTm = NULL, FILETIME *SI_mftTm = NULL,
+			FILETIME *FN_writeTm = NULL, FILETIME *FN_createTm = NULL, FILETIME *FN_accessTm = NULL, FILETIME *FN_mftTm = NULL) const;
 
 private:
 	// File permission and time in $FILE_NAME only updates when the filename changes
 	// So hide these functions to prevent user from getting the error information
 	// Standard Information and IndexEntry keeps the most recent file time and permission infomation
-	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const {}
-	__inline DWORD GetFilePermission(){}
+	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL, FILETIME *mftTm = NULL) const;
+
+
 	__inline BOOL IsReadOnly() const {}
 	__inline BOOL IsHidden() const {}
 	__inline BOOL IsSystem() const {}
