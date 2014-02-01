@@ -1,0 +1,5 @@
+Invalid parameter
+Usage: ntfsdir "path"
+eg. ntfsdir c:
+eg. ntfsdir c:\windows
+eg. ntfsdir "c:\program files\common files"

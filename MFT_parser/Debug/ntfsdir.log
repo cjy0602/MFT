@@ -1,0 +1,33 @@
+﻿빌드 시작: 2014-02-01 오후 12:31:03
+     1>2 노드의 "C:\Users\cjy\Desktop\MFTParser_\MFT_parser\ntfsdir.vcxproj" 프로젝트(Build 대상)입니다.
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _VC80_UPGRADE=0x0600 /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /Gy- /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug\\" /Fd".\Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         main.cpp
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_attribute.h(160): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(317) : 'wcsncpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_attribute.h(783): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(317) : 'wcsncpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_attribute.h(941): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(317) : 'wcsncpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_attribute.h(1081): warning C4996: 'wcsncpy': This function or variable may be unsafe. Consider using wcsncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(317) : 'wcsncpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_attribute.h(1091): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(191) : 'strncpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\ntfslib\ntfs_filerecord.h(856): warning C4996: '_snprintf': This function or variable may be unsafe. Consider using _snprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(349) : '_snprintf' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\mft_parser\main.cpp(140): warning C4102: 'Exit' : 참조되지 않은 레이블입니다.
+     1>c:\users\cjy\desktop\mftparser_\mft_parser\main.cpp(291): warning C4996: 'scanf': This function or variable may be unsafe. Consider using scanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(290) : 'scanf' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\mft_parser\main.cpp(316): warning C4244: '인수' : 'ULONGLONG'에서 'size_t'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+     1>c:\users\cjy\desktop\mftparser_\mft_parser\main.cpp(397): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\string.h(110) : 'strcpy' 선언을 참조하십시오.
+     1>c:\users\cjy\desktop\mftparser_\mft_parser\main.cpp(271): warning C4101: 'lpBuffer' :참조되지 않은 지역 변수입니다.
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\Debug\ntfsdir.exe" /INCREMENTAL /NOLOGO odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:".\Debug\ntfsdir.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\Debug\ntfsdir.lib" /MACHINE:X86 /SAFESEH .\Debug\main.obj
+     1>main.obj : warning LNK4075: '/EDITANDCONTINUE'이(가) '/SAFESEH' 사양으로 인해 무시됩니다.
+         ntfsdir.vcxproj -> C:\Users\cjy\Desktop\MFTParser_\MFT_parser\.\Debug\ntfsdir.exe
+     1>"C:\Users\cjy\Desktop\MFTParser_\MFT_parser\ntfsdir.vcxproj" 프로젝트를 빌드했습니다(Build 대상).
+
+빌드했습니다.
+
+경과 시간: 00:00:03.61

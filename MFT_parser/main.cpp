@@ -1,0 +1,451 @@
+#include "../NTFSLib/NTFS.h"
+#include <stdio.h>
+#include <windows.h>
+#include "time.h"
+#include <iostream>
+#include <Setupapi.h>
+#include <Ntddstor.h>
+#include <string>
+
+#pragma comment( lib, "setupapi.lib" )
+
+using namespace std;
+
+struct mftstruct{
+	char FILENAME[100]; 
+	SYSTEMTIME W_TIME, C_TIME, A_TIME;
+};
+typedef struct mftstruct MFTSTRUCT;
+
+int totalfiles = 0;
+int totaldirs = 0;
+
+#define START_ERROR_CHK()           \
+    DWORD error = ERROR_SUCCESS;    \
+    DWORD failedLine;               \
+    string failedApi;
+
+#define CHK( expr, api )            \
+    if ( !( expr ) ) {              \
+        error = GetLastError( );    \
+        failedLine = __LINE__;      \
+        failedApi = ( api );        \
+        goto Error_Exit;            \
+    }
+
+#define END_ERROR_CHK()             \
+    error = ERROR_SUCCESS;          \
+    Error_Exit:                     \
+    if ( ERROR_SUCCESS != error ) { \
+        cout << failedApi << " failed at " << failedLine << " : Error Code - " << error << endl;    \
+    }
+
+int getPhysicalDrive() {
+
+    HDEVINFO diskClassDevices;
+    GUID diskClassDeviceInterfaceGuid = GUID_DEVINTERFACE_DISK;
+    SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
+    PSP_DEVICE_INTERFACE_DETAIL_DATA deviceInterfaceDetailData;
+    DWORD requiredSize;
+    DWORD deviceIndex;
+
+    HANDLE disk = INVALID_HANDLE_VALUE;
+    STORAGE_DEVICE_NUMBER diskNumber;
+    DWORD bytesReturned;
+
+    START_ERROR_CHK();
+
+    //
+    // Get the handle to the device information set for installed
+    // disk class devices. Returns only devices that are currently
+    // present in the system and have an enabled disk device
+    // interface.
+    //
+    diskClassDevices = SetupDiGetClassDevs( &diskClassDeviceInterfaceGuid,
+                                            NULL,
+                                            NULL,
+                                            DIGCF_PRESENT |
+                                            DIGCF_DEVICEINTERFACE );
+    CHK( INVALID_HANDLE_VALUE != diskClassDevices,
+         "SetupDiGetClassDevs" );
+
+    ZeroMemory( &deviceInterfaceData, sizeof( SP_DEVICE_INTERFACE_DATA ) );
+    deviceInterfaceData.cbSize = sizeof( SP_DEVICE_INTERFACE_DATA );
+    deviceIndex = 0;
+
+    while ( SetupDiEnumDeviceInterfaces( diskClassDevices,
+                                         NULL,
+                                         &diskClassDeviceInterfaceGuid,
+                                         deviceIndex,
+                                         &deviceInterfaceData ) ) {
+
+        ++deviceIndex;
+
+        SetupDiGetDeviceInterfaceDetail( diskClassDevices,
+                                         &deviceInterfaceData,
+                                         NULL,
+                                         0,
+                                         &requiredSize,
+                                         NULL );
+        CHK( ERROR_INSUFFICIENT_BUFFER == GetLastError( ),
+             "SetupDiGetDeviceInterfaceDetail - 1" );
+
+        deviceInterfaceDetailData = ( PSP_DEVICE_INTERFACE_DETAIL_DATA ) malloc( requiredSize );
+        CHK( NULL != deviceInterfaceDetailData,
+             "malloc" );
+
+        ZeroMemory( deviceInterfaceDetailData, requiredSize );
+        deviceInterfaceDetailData->cbSize = sizeof( SP_DEVICE_INTERFACE_DETAIL_DATA );
+
+        CHK( SetupDiGetDeviceInterfaceDetail( diskClassDevices,
+                                              &deviceInterfaceData,
+                                              deviceInterfaceDetailData,
+                                              requiredSize,
+                                              NULL,
+                                              NULL ),
+             "SetupDiGetDeviceInterfaceDetail - 2" );
+
+        disk = CreateFile( deviceInterfaceDetailData->DevicePath,
+                           GENERIC_READ,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE,
+                           NULL,
+                           OPEN_EXISTING,
+                           FILE_ATTRIBUTE_NORMAL,
+                           NULL );
+        CHK( INVALID_HANDLE_VALUE != disk,
+             "CreateFile" );
+
+        CHK( DeviceIoControl( disk,
+                              IOCTL_STORAGE_GET_DEVICE_NUMBER,
+                              NULL,
+                              0,
+                              &diskNumber,
+                              sizeof( STORAGE_DEVICE_NUMBER ),
+                              &bytesReturned,
+                              NULL ),
+             "IOCTL_STORAGE_GET_DEVICE_NUMBER" );
+
+        CloseHandle( disk );
+        disk = INVALID_HANDLE_VALUE;
+
+        cout << deviceInterfaceDetailData->DevicePath << endl;
+        cout << "\\\\?\\PhysicalDrive" << diskNumber.DeviceNumber << endl;
+        cout << endl;
+    }
+    CHK( ERROR_NO_MORE_ITEMS == GetLastError( ),
+         "SetupDiEnumDeviceInterfaces" );
+
+    END_ERROR_CHK();
+
+Exit:
+
+    if ( INVALID_HANDLE_VALUE != diskClassDevices ) {
+        SetupDiDestroyDeviceInfoList( diskClassDevices );
+    }
+
+    if ( INVALID_HANDLE_VALUE != disk ) {
+        CloseHandle( disk );
+    }
+
+    return error;
+}
+
+void pause(void) {
+  printf("Press any key to continue . . .");
+  getchar();  // 아무 키나 1개 입력 받기
+  puts(""); // 줄바꿈
+}
+
+void usage()
+{
+	printf("\n# Invalid parameter\n");
+	printf("# Usage: mftparset.exe c:\n");
+}
+
+// get volume name 'C', 'D', ...
+// *ppath -> "c:\program files\common files"
+char getvolume(char **ppath)
+{
+	char *p = *ppath;
+	char volname;
+
+	// skip leading blank and "
+	while (*p)
+	{
+		if (*p == ' ' || *p == '"')
+			p++;
+		else
+			break;
+	}
+	if (*p == '\0')
+		return '\0';
+	else
+	{
+		volname = *p;
+		p++;
+	}
+
+	// skip blank
+	while(*p)
+	{
+		if (*p == ' ')
+			p++;
+		else
+			break;
+	}
+	if (*p == '\0')
+		return '\0';
+
+	if (*p != ':')
+		return '\0';
+
+	// forward to '\' or string end
+	while (*p)
+	{
+		if (*p != '\\')
+			p++;
+		else
+			break;
+	}
+	// forward to not '\' and not ", or string end
+	while (*p)
+	{
+		if (*p == '\\' || *p == '"')
+			p++;
+		else
+			break;
+	}
+
+	*ppath = p;
+	return volname;
+}
+
+void printfile(const CIndexEntry *ie) // 호출 X
+{
+
+
+	// Hide system metafiles
+	if (ie->GetFileReference() < MFT_IDX_USER)
+	{
+		printf("MFT Metadata : Entry < 15\n");
+		return;
+	}
+
+	// Ignore DOS alias file names
+	if (!ie->IsWin32Name())
+		return;
+
+	FILETIME ft;
+	char fn[MAX_PATH];
+	int fnlen = ie->GetFileName(fn, MAX_PATH);
+	if (fnlen > 0)
+	{
+		ie->GetFileTime(&ft);
+		SYSTEMTIME st;
+		if (FileTimeToSystemTime(&ft, &st))
+		{
+			printf("%d-%02d-%02d  %02d:%02d\t%s    ", st.wYear, st.wMonth, st.wDay,
+				st.wHour, st.wMinute, ie->IsDirectory()?"<DIR>":"     ");
+
+			if (!ie->IsDirectory())
+				printf("%I64u\t", ie->GetFileSize());
+			else
+				printf("\t");
+
+			printf("<%c%c%c>\t%s\n", ie->IsReadOnly()?'R':' ',
+				ie->IsHidden()?'H':' ', ie->IsSystem()?'S':' ', fn);
+		}
+
+		if (ie->IsDirectory())
+			totaldirs ++;
+		else
+			totalfiles ++;
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	clock_t start, end; // 프로그램 실행 시간 측정 용
+
+	DWORD mydrives = 100;// buffer length
+	char lpBuffer[100];// buffer for drive string storage
+	
+	if (argc != 2)
+	{
+		//usage();
+	}
+	
+	printf("# The Physical Drives of this Machine : \n");
+	//getPhysicalDrive();
+	system("wmic diskdrive get Caption, Name");
+	printf("\n");
+
+	printf("# The Logical Drives of this Machine : \n");
+	system("wmic logicaldisk get Description, Name, FileSystem, SystemName");
+
+
+		////////////////////////////////////// 분석할 드라이브 입력.
+
+	char Name[200];
+	printf("\n# Enter the drive Name : ");
+	scanf("%200s", Name);
+	char *path = Name;
+
+	char volname;
+	volname = getvolume(&path); // Double Pointer !
+
+	if (!volname)
+	{
+		usage();
+		return -1;
+	}
+
+	CNTFSVolume volume(volname);
+	if (!volume.IsVolumeOK())
+	{
+		printf("Cannot get NTFS BPB from boot sector of volume %c\n", volname);
+		return -1;
+	}
+
+	ULONGLONG entry_count;
+	entry_count = volume.GetRecordsCount();	// ULONGLONG GetRecordsCount() const
+	printf("MFT Records Count = %d\n\n", entry_count);
+
+	// MFT 정보가 저장되는 구조체 배열 동적할당.
+	MFTSTRUCT *u3; 
+	u3 = (MFTSTRUCT *)malloc(sizeof(MFTSTRUCT) * entry_count);
+	if(u3 ==NULL){
+		puts("Malloc Failed...");
+		exit(1);
+	}
+
+	ULONGLONG  mft_addr;
+	mft_addr = volume.GetMFTAddr();
+	// printf("$MFT metafile start Adderss = %p\n\n\n", mft_addr);
+	// Relative start address of the $MFT metafile. Get from BPB.
+	
+	//////////////////////////////////////////////////////////////////////////////
+	// 분석할 드라이브 선택 후 볼륨 정보까지 가지고왔음.
+
+
+	// get root directory info
+	//.(Root Directory)는 볼륨의 루트디렉터리를 의미하는 것으로 
+	// 디렉터리 구조의 파일을 빠르게 접근하기 위해 INDEX 구조로 저장된다.
+	
+	CFileRecord fr(&volume);
+
+	// we only need INDEX_ROOT and INDEX_ALLOCATION
+	// don't waste time and ram to parse unwanted attributes
+	//fr.SetAttrMask( MASK_INDEX_ROOT | MASK_INDEX_ALLOCATION);
+
+	fr.SetAttrMask(MASK_STANDARD_INFORMATION | MASK_FILE_NAME);
+
+	//------------------------------------------------------------------------
+	if (!fr.ParseFileRecord(MFT_IDX_ROOT))	// 볼륨의 루트 디렉토리 
+	{
+		printf("Cannot read root directory of volume %c\n", volname);
+		return -1;
+	}
+
+	if (!fr.ParseAttrs())
+	{
+		printf("Cannot parse attributes\n");
+		return -1;
+	}
+	//---------------------------------------------- MFT 루트 디렉토리 파싱
+
+	CIndexEntry ie;
+	
+	// 파일의 MAC타임 정보 저장.
+	FILETIME writeTm;
+	FILETIME createTm;
+	FILETIME accessTm;
+
+	char fn[MAX_PATH];
+	
+	start = clock(); // 프로그램 실행 시간 측정 (전체 MFT Entry 디코드 시간)
+
+	for(int i=0 ;i<entry_count ; i++)
+	{
+		fr.ParseFileRecord(i);
+
+		if (!fr.ParseAttrs())	// <--- 해당 파일 엔트리 파싱.
+		{
+			//printf("Entry NUM %d Cannot parse attributes\n", i);
+			continue;
+		}
+
+		int fnlen = fr.GetFileName(fn, MAX_PATH);
+		if (fnlen > 0)
+		{
+			fr.GetFileTime(&writeTm, &createTm, &accessTm);
+			
+			SYSTEMTIME writeTm_s;
+			SYSTEMTIME createTm_s;
+			SYSTEMTIME accessTm_s;
+			
+			FileTimeToSystemTime(&writeTm, &writeTm_s); 
+			FileTimeToSystemTime(&createTm, &createTm_s);
+			FileTimeToSystemTime(&accessTm, &accessTm_s);
+			
+			if (fr.IsDirectory())
+				totaldirs ++;
+			else
+				totalfiles ++;
+
+			// 구조체 배열에 값 저장.
+			strcpy(u3[i].FILENAME, fn);
+			u3[i].W_TIME = writeTm_s;
+		    u3[i].A_TIME = createTm_s;
+			u3[i].C_TIME = accessTm_s;
+
+
+			if (0) // 화면에 출력 하냐 안하냐 설정   0 = 출력안함 / 1 = 출력함
+			{
+				printf("************************************************************\n\n");
+				printf("Currnet Entry_NUM is %d\n", i);
+
+				printf("WRITE TIME : %d-%02d-%02d  %02d:%02d\t\n", writeTm_s.wYear, writeTm_s.wMonth, writeTm_s.wDay,
+									writeTm_s.wHour, writeTm_s.wMinute);
+				printf("CREATE TIME : %d-%02d-%02d  %02d:%02d\t\n", createTm_s.wYear, createTm_s.wMonth, createTm_s.wDay,
+									createTm_s.wHour, createTm_s.wMinute);
+				printf("ACCESS TIME : %d-%02d-%02d  %02d:%02d\t\n", accessTm_s.wYear, accessTm_s.wMonth, accessTm_s.wDay,
+									accessTm_s.wHour, accessTm_s.wMinute);
+
+				printf("File TYPE : \t%s", fr.IsDirectory()?"<DIR>\n":"<FILE>\n");
+
+			   if (!fr.IsDirectory())
+					printf("filesize = %I64u\n", fr.GetFileSize());
+			   else
+					printf("\t");
+
+			   printf("<%c%c%c%c>\t%s\n", fr.IsReadOnly()?'R':' ',
+				   fr.IsHidden()?'H':' ', fr.IsSystem()?'S':' ',fr.IsDeleted()?'D':' ',fn);
+
+			  //printf("filename = %s\n", fn);
+			}
+		}
+		
+	}
+
+	end = clock();
+	printf("\n##### 전체 소요시간 : %5.2f초 #####\n", (float)(end-start)/CLOCKS_PER_SEC);
+
+	/*
+	for(int i=0 ;i<entry_count ; i++)
+	{
+		printf(" [i] entry values\n ");
+		printf(" FILENAME = %s\t", u3[i].FILENAME);
+		printf(" W_TIME = %d\t", u3[i].W_TIME);
+		printf(" A_TIME = %d\t", u3[i].A_TIME);
+		printf(" C_TIME = %d\t\n\n", u3[i].C_TIME);
+
+	}
+	*/
+
+	// list it !
+	// fr.TraverseSubEntries(printfile);  // CallBack 함수 등록 !!!!!
+	printf("Files: %d, Directories: %d\n", totalfiles, totaldirs);
+
+	return 0;
+}
