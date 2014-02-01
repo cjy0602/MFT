@@ -12,6 +12,8 @@
 using namespace std;
 
 struct mftstruct{
+	ULONGLONG entry;
+	ULONGLONG ParentRef;
 	char FILENAME[100]; 
 	SYSTEMTIME W_TIME, C_TIME, A_TIME;
 };
@@ -365,7 +367,8 @@ int main(int argc, char *argv[])
 	
 	start = clock(); // 프로그램 실행 시간 측정 (전체 MFT Entry 디코드 시간)
 
-	for(int i=0 ;i<entry_count ; i++)
+	for(int i=30 ;i<40 ; i++)
+	//for(int i=0 ;i<entry_count ; i++)
 	{
 		fr.ParseFileRecord(i);
 
@@ -379,7 +382,7 @@ int main(int argc, char *argv[])
 		if (fnlen > 0)
 		{
 			fr.GetFileTime(&writeTm, &createTm, &accessTm);
-			
+
 			SYSTEMTIME writeTm_s;
 			SYSTEMTIME createTm_s;
 			SYSTEMTIME accessTm_s;
@@ -398,12 +401,15 @@ int main(int argc, char *argv[])
 			u3[i].W_TIME = writeTm_s;
 		    u3[i].A_TIME = createTm_s;
 			u3[i].C_TIME = accessTm_s;
+			u3[i].entry = i;
+			u3[i].ParentRef = fr.GetParentRef();
 
 
-			if (0) // 화면에 출력 하냐 안하냐 설정   0 = 출력안함 / 1 = 출력함
+			if (1) // 화면에 출력 하냐 안하냐 설정   0 = 출력안함 / 1 = 출력함
 			{
 				printf("************************************************************\n\n");
-				printf("Currnet Entry_NUM is %d\n", i);
+				printf("Current MFT Entry NUM : %u\n", i);
+				printf("MFT Parent Reference : %u\n", fr.GetParentRef());
 
 				printf("WRITE TIME : %d-%02d-%02d  %02d:%02d\t\n", writeTm_s.wYear, writeTm_s.wMonth, writeTm_s.wDay,
 									writeTm_s.wHour, writeTm_s.wMinute);
@@ -435,11 +441,12 @@ int main(int argc, char *argv[])
 	for(int i=0 ;i<entry_count ; i++)
 	{
 		printf(" [i] entry values\n ");
-		printf(" FILENAME = %s\t", u3[i].FILENAME);
-		printf(" W_TIME = %d\t", u3[i].W_TIME);
-		printf(" A_TIME = %d\t", u3[i].A_TIME);
-		printf(" C_TIME = %d\t\n\n", u3[i].C_TIME);
-
+		printf(" FILENAME = %s\n", u3[i].FILENAME);
+		printf(" W_TIME = %u\n", u3[i].W_TIME);
+		printf(" A_TIME = %u\n", u3[i].A_TIME);
+		printf(" C_TIME = %u\n", u3[i].C_TIME);
+		printf(" Entry Num = %u\n", u3[i].entry);
+		printf(" ParentReg Num = %u\n\n", u3[i].ParentRef);
 	}
 	*/
 

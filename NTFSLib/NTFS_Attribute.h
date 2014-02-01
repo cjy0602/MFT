@@ -724,6 +724,7 @@ public:
 	__inline BOOL IsEncrypted() const;
 	__inline BOOL IsSparse() const;
 
+	int GetParentRef() const;
 	int GetFileName(char *buf, DWORD bufLen) const;
 	int GetFileName(wchar_t *buf, DWORD bufLen) const;
 	__inline BOOL HasName() const;
@@ -893,6 +894,13 @@ __inline BOOL CFileName::IsSparse() const
 	return FileName ? ((FileName->Flags) & ATTR_FILENAME_FLAG_SPARSE) : FALSE;
 }
 
+int CFileName::GetParentRef() const
+{
+	//printf("\n\n TEST it : %d\n", FileName->ParentRef);
+	return FileName->ParentRef;
+
+}
+
 // Get ANSI File Name
 // Return 0: Unnamed, <0: buffer too small, -buffersize, >0 Name length
 int CFileName::GetFileName(char *buf, DWORD bufLen) const
@@ -909,6 +917,7 @@ int CFileName::GetFileName(char *buf, DWORD bufLen) const
 
 		len = WideCharToMultiByte(CP_ACP, 0, (wchar_t*)FileName->Name, FileName->NameLength,
 				buf, bufLen, NULL, NULL);
+		//printf("\n\n TEST it : %d\n", FileName->ParentRef);
 		if (len)
 		{
 			buf[len] = '\0';

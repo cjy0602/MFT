@@ -123,6 +123,7 @@ public:
 	__inline const CAttrBase* FindFirstAttr(DWORD attrType) const;
 	const CAttrBase* FindNextAttr(DWORD attrType) const;
 
+	int GetParentRef() const;
 	int GetFileName(_TCHAR *buf, DWORD bufLen) const;
 	__inline ULONGLONG GetFileSize() const;
 	void GetFileTime(FILETIME *writeTm, FILETIME *createTm = NULL, FILETIME *accessTm = NULL) const;
@@ -591,6 +592,12 @@ int CFileRecord::GetFileName(_TCHAR *buf, DWORD bufLen) const
 	}
 
 	return 0;
+}
+
+int CFileRecord::GetParentRef() const
+{
+	CAttr_FileName *fn = (CAttr_FileName*)AttrList[ATTR_INDEX(ATTR_TYPE_FILE_NAME)].FindFirstEntry();
+	return fn ? fn->GetParentRef() : 0;
 }
 
 // Get File Size
