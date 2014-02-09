@@ -9,17 +9,32 @@
 #include <string>
 //#include <string.h>
 
+
 #pragma comment( lib, "setupapi.lib" )
 
 using namespace std;
+
+unsigned int filetime_to_microseconds(const FILETIME& ft)
+{
+    // FILETIME 은 1601-Jan-01 기준으로 10,000,000 분의 1초(100 나노초) 로 기록됨
+    union
+    {
+        FILETIME asFileTime ;
+        unsigned int asInt64 ;
+    } myFileTime;
+ 
+    myFileTime.asFileTime = ft;
+    myFileTime.asInt64 -= 116444736000000000ULL; // 1970-Jan-01 기준 으로 변환
+    return (myFileTime.asInt64 / 10); // microseconds 로 변환
+}
 
 struct mftstruct{
 	ULONGLONG entry;
 	ULONGLONG ParentRef;
 	char FILENAME[MAX_PATH]; 
 	char FULLPATH[MAX_PATH];
-	SYSTEMTIME SI_writeTm, SI_createTm, SI_accessTm, SI_mftTm;
-	SYSTEMTIME FN_writeTm, FN_createTm, FN_accessTm, FN_mftTm;
+	unsigned int SI_writeTm, SI_createTm, SI_accessTm, SI_mftTm;
+	unsigned int FN_writeTm, FN_createTm, FN_accessTm, FN_mftTm;
 };
 typedef struct mftstruct MFTSTRUCT;
 
@@ -138,9 +153,6 @@ int main(int argc, char *argv[])
 {
 	clock_t start, end; // 프로그램 실행 시간 측정 용
 
-	DWORD mydrives = 100;// buffer length
-	char lpBuffer[100];// buffer for drive string storage
-	
 	if (argc != 2)
 	{
 		//usage();
@@ -260,16 +272,18 @@ int main(int argc, char *argv[])
 		{
 			fr.GetFileTime(&SI_writeTm, &SI_createTm, &SI_accessTm, &SI_mftTm, &FN_writeTm, &FN_createTm, &FN_accessTm, &FN_mftTm);
 
-			SYSTEMTIME SI_writeTm_s;
-			SYSTEMTIME SI_createTm_s;
-			SYSTEMTIME SI_accessTm_s;
-			SYSTEMTIME SI_mftTm_s;
+	
+			unsigned int SI_writeTm_s;
+			unsigned int SI_createTm_s;
+			unsigned int SI_accessTm_s;
+			unsigned int SI_mftTm_s;
 
-			SYSTEMTIME FN_writeTm_s;
-			SYSTEMTIME FN_createTm_s;
-			SYSTEMTIME FN_accessTm_s;
-			SYSTEMTIME FN_mftTm_s;
-			
+			unsigned int FN_writeTm_s;
+			unsigned int FN_createTm_s;
+			unsigned int FN_accessTm_s;
+			unsigned int FN_mftTm_s;
+
+			/*
 			FileTimeToSystemTime(&SI_writeTm, &SI_writeTm_s); 
 			FileTimeToSystemTime(&SI_createTm, &SI_createTm_s);
 			FileTimeToSystemTime(&SI_accessTm, &SI_accessTm_s);
@@ -279,7 +293,17 @@ int main(int argc, char *argv[])
 			FileTimeToSystemTime(&FN_createTm, &FN_createTm_s);
 			FileTimeToSystemTime(&FN_accessTm, &FN_accessTm_s);
 			FileTimeToSystemTime(&FN_mftTm, &FN_mftTm_s);
+			*/
 
+			SI_writeTm_s = filetime_to_microseconds(SI_writeTm);
+			SI_createTm_s = filetime_to_microseconds(SI_createTm);
+			SI_accessTm_s = filetime_to_microseconds(SI_accessTm);
+			SI_mftTm_s = filetime_to_microseconds(SI_mftTm);
+
+			FN_writeTm_s = filetime_to_microseconds(FN_writeTm);
+			FN_createTm_s = filetime_to_microseconds(FN_createTm);
+			FN_accessTm_s = filetime_to_microseconds(FN_accessTm);
+			FN_mftTm_s = filetime_to_microseconds(FN_mftTm);
 
 			if (fr.IsDirectory())
 				totaldirs ++;
@@ -304,30 +328,21 @@ int main(int argc, char *argv[])
 
 			
 		
-			if (0) // 화면에 출력 하냐 안하냐 설정   0 = 출력안함 / 1 = 출력함
+			if (1) // 화면에 출력 하냐 안하냐 설정   0 = 출력안함 / 1 = 출력함
 			{
 				printf("************************************************************\n\n");
 				printf("Current MFT Entry NUM : %u\n", i);
 				printf("MFT Parent Reference : %u\n", fr.GetParentRef());
 
-				printf("SI_WRITE TIME : %d-%02d-%02d  %02d:%02d\t\n", SI_writeTm_s.wYear, SI_writeTm_s.wMonth, SI_writeTm_s.wDay,
-									SI_writeTm_s.wHour, SI_writeTm_s.wMinute);
-				printf("SI_CREATE TIME : %d-%02d-%02d  %02d:%02d\t\n", SI_createTm_s.wYear, SI_createTm_s.wMonth, SI_createTm_s.wDay,
-									SI_createTm_s.wHour, SI_createTm_s.wMinute);
-				printf("SI_ACCESS TIME : %d-%02d-%02d  %02d:%02d\t\n", SI_accessTm_s.wYear, SI_accessTm_s.wMonth, SI_accessTm_s.wDay,
-									SI_accessTm_s.wHour, SI_accessTm_s.wMinute);
-				printf("SI_MFT TIME : %d-%02d-%02d  %02d:%02d\t\n", SI_mftTm_s.wYear, SI_mftTm_s.wMonth, SI_mftTm_s.wDay,
-									SI_mftTm_s.wHour, SI_mftTm_s.wMinute);
+				printf("SI_WRITE TIME : %d\n", SI_writeTm_s);
+				printf("SI_CREATE TIME : %d\n", SI_createTm_s);
+				printf("SI_ACCESS TIME : %d\n", SI_accessTm_s);
+				printf("SI_MFT TIME : %d\n", SI_mftTm_s);
 
-				printf("FN_WRITE TIME : %d-%02d-%02d  %02d:%02d\t\n", FN_writeTm_s.wYear, FN_writeTm_s.wMonth, FN_writeTm_s.wDay,
-									FN_writeTm_s.wHour, FN_writeTm_s.wMinute);
-				printf("FN_CREATE TIME : %d-%02d-%02d  %02d:%02d\t\n", FN_createTm_s.wYear, FN_createTm_s.wMonth, FN_createTm_s.wDay,
-									FN_createTm_s.wHour, FN_createTm_s.wMinute);
-				printf("FN_ACCESS TIME : %d-%02d-%02d  %02d:%02d\t\n", FN_accessTm_s.wYear, FN_accessTm_s.wMonth, FN_accessTm_s.wDay,
-									FN_accessTm_s.wHour, FN_accessTm_s.wMinute);
-				printf("FN_MFT TIME : %d-%02d-%02d  %02d:%02d\t\n", FN_mftTm_s.wYear, FN_mftTm_s.wMonth, FN_mftTm_s.wDay,
-									FN_mftTm_s.wHour, FN_mftTm_s.wMinute);
-
+				printf("FN_WRITE TIME : %d\n", FN_writeTm_s);
+				printf("FN_CREATE TIME : %d\n", FN_createTm_s);
+				printf("FN_ACCESS TIME : %d\n", FN_accessTm_s);
+				printf("FN_MFT TIME : %d\n", FN_mftTm_s);
 
 				printf("File TYPE : \t%s", fr.IsDirectory()?"<DIR>\n":"<FILE>\n");
 
